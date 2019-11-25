@@ -310,8 +310,6 @@ class Selu(nn.Module):
     def forward(self, x):
         return self.scale * torch.where(x>=0.0, x, self.alpha * torch.exp(x) - self.alpha)
 
-from activations import *
-
 def enc_dec_layer(ni, nf, bn=True, act=False):
     # choosing act if provided
     if act=='selu':
@@ -319,7 +317,6 @@ def enc_dec_layer(ni, nf, bn=True, act=False):
         bn = False
     elif act=='relu': act_fn = nn.ReLU(inplace=True)
     elif act=='elu': act_fn = nn.ELU(inplace=True)
-    else: act_fn = act_(act)
 
     layers = [nn.Linear(ni, nf), act_fn]
 
