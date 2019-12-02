@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
+import math
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -158,33 +159,6 @@ def return_vec(p):
         ps.append(p[i].squeeze(dim=0))
     return ps
 
-# def create_enc_dataset(dataset, model, dl_full=True):
-#     """
-#     Once you have a pre-trained autoencoder, this function will take in the model, grab the encoder an form a entirely new dataset based on encoder output.
-
-#     This is done by first creating a new dataloader class without shuffle and with batchsize as 1. Therefor every output of the encoder will map into the appropriate index.
-
-#     RETURN:
-#         enc_dataset: <list>
-#         dataloader: <dataloader>: our raw dataset without shuffle and bs = 1
-#     """
-#     # creating new dataloader
-#     bs = 1
-#     dataloader = DataLoader(dataset, batch_size=bs, shuffle=False)
-
-#     # grab encoder
-#     enc = get_enc(model)
-
-#     # full dataset
-#     dll = dataloader.dataset.X.shape[0] if dl_full else 10
-
-#     # prediction from encoder
-#     p_en = get_pred(dataloader, enc, c_end=dll) # default 5 output
-#     p_en = return_vec(p_en)
-#     enc_dataset = f2s(p_en)
-
-#     return enc_dataset, dataloader
-
 def create_enc_dataset(dataloader, model, dl_full=True, print_=False):
     """
     Once you have a pre-trained autoencoder, this function will take in the model, grab the encoder an form a entirely new dataset based on encoder output.
@@ -200,7 +174,7 @@ def create_enc_dataset(dataloader, model, dl_full=True, print_=False):
     # creating initial dataloader
     bs = dataloader.batch_size
     dataset = dataloader.dataset
-    dataloader = DataLoader(dataset, batch_size=bs, shuffle=True, num_workers=0)
+    dataloader = DataLoader(dataset, batch_size=bs, shuffle=True, num_workers=1)
     train_sparse_autoencoder_one_cycle(dataloader, model, optimizer=model.optimizer_, max_lr=model.max_lr_, num_epochs=1, sparse_reg=model.sparse_reg_, print_=print_);
     
     # creating new dataloader
@@ -219,43 +193,6 @@ def create_enc_dataset(dataloader, model, dl_full=True, print_=False):
     enc_dataset = f2s(p_en)
 
     return enc_dataset, dataloader
-
-# def create_augmented_df(enc_ds, dl, cat_names, original_df, dep_var=False):
-#     # combining our original dl with the index: its the same here, but this is for safe measure
-#     df1 = pd.DataFrame(dl.dataset.X)
-#     df1_index = pd.DataFrame(dl.dataset.y)
-#     df_concat = pd.concat([df1, df1_index], axis=1)
-
-#     # encoder df
-#     enc_df = pd.DataFrame(enc_ds)
-
-#     # grabbing old column and new column names
-#     old_col_names = []
-#     new_col_names = []
-#     for name in enc_df.columns:
-#         new_name = f'v{name}'
-#         new_col_names.append(new_name)
-#         old_col_names.append(name)
-
-#     # mapping old columns to new columsn as dictionary
-#     # will use this to create new column names
-#     otn_cols_dict = dict(zip(old_col_names, new_col_names))
-
-#     # renaming the encoder df columns
-#     enc_df.rename(columns=otn_cols_dict, inplace=True)
-
-#     # concatting enc_df with our old df
-#     df_w_enc = pd.concat([df_concat, enc_df], axis=1)
-#     df_w_enc.drop('index', axis=1, inplace=True)
-
-#     # concatting our categorical variables back to our new df
-#     if dep_var: cat_names = cat_names + [dep_var] # grab target and cat names if target exist
-#     df_cat = original_df[cat_names].copy()
-
-#     # forming our new df
-#     df_final = pd.concat([df_w_enc, df_cat], axis=1)
-
-#     return df_final
 
 def create_augmented_df(enc_ds, dl, original_df, cat_names=False, dep_var=False):
     # combining our original dl with the index: its the same here, but this is for safe measure
@@ -310,6 +247,9 @@ class Selu(nn.Module):
     def forward(self, x):
         return self.scale * torch.where(x>=0.0, x, self.alpha * torch.exp(x) - self.alpha)
 
+from activations import *
+
+# ORIGINAL
 def enc_dec_layer(ni, nf, bn=True, act=False):
     # choosing act if provided
     if act=='selu':
@@ -317,12 +257,14 @@ def enc_dec_layer(ni, nf, bn=True, act=False):
         bn = False
     elif act=='relu': act_fn = nn.ReLU(inplace=True)
     elif act=='elu': act_fn = nn.ELU(inplace=True)
+    else: act_fn = act_(act)
 
     layers = [nn.Linear(ni, nf), act_fn]
 
     if bn: layers.append(nn.BatchNorm1d(nf, eps=1e-5, momentum=0.1))
 
     return nn.Sequential(*layers)
+
 
 class AutoEncoder(nn.Module):
     def __init__(self, nfs, c_in, encoder_type, ps=0.1,**kwargs):
@@ -357,17 +299,6 @@ class AutoEncoder(nn.Module):
                 x = self.dropout(l(x))
 
         return x
-
-# def create_autoencoder(dataloader, nfs, encoder_type='over', cuda=True, **kwargs):
-#     """
-#     Creating a dynamic autoencoder
-#     TO DO:
-#         Make more dynamic: Overcomplete, Undercomplete, Dropout, VAE, etc
-#     """
-#     c_in = dataloader.dataset.X.shape[1]
-#     model = AutoEncoder(nfs, c_in, encoder_type, **kwargs)
-#     if cuda: model.cuda()
-#     return model
 
 def create_tabular_dataset(df, cont_names):
     df_new = normalize_data(df, cont_names)

@@ -2,13 +2,13 @@
 ## Author: Diego Medina-Bernal
 ## github: https://github.com/dmbernaal
 
-
 from fastai.layers import *
 from functools import partial
 import torch.nn as nn
 import torch.nn.functional as F
 from fastai.tabular import Module
 import torch
+import math
 
 class Mish(nn.Module):
     def __init__(self): super().__init__()
@@ -117,14 +117,6 @@ class Tabular(Module):
             x = torch.cat([x, x_cont], 1) if self.n_emb != 0 else x_cont
         x = self.layers(x)
         return x
-
-# def create_tabular_model(data, nfs, layer=tabular_layer, act='relu', **kwargs):
-#     """
-#     Main function to create a dynamic tabular model
-
-#     TO DO: Add Init function. Experiment with deferent initialization methods such as no bias with BN, etc
-#     """
-#     return Tabular(data, nfs, layer, act, **kwargs)
 
 # MODIFIED: INIT
 # w = w / math.sqrt(1/.fan_in)
