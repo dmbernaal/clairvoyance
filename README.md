@@ -2,7 +2,7 @@
 Data augmentation method for tabular-structured data. 
 
 ## About
-Clairvoyance is an **experimental** approach to performing *data augmentation* on any tabular-structured dataset. Data augmentation is a common method used in training computer vision models - allowing for better regualization of the model. *tabular structured here means SQL, CSV formatted data*.
+Clairvoyance is an **experimental** approach to performing *data augmentation* on any tabular-structured dataset. Data augmentation is a common method used in training computer vision models - allowing for better regularization of the model. *tabular structured here means SQL, CSV formatted data*.
 
 Here we take the same intuition of adding 'additional dimensions' to a raw dataset, with the purpose of generating more data. The hypothesis here is that with appropriately augmented data, the deep learning model will both generalize better and perform better than baseline. 
 
@@ -11,7 +11,7 @@ When dealing with tabular-structured data, the most common algorithms used are *
 **Clairvoyance** challenges this practice by creating augmented data through carefully designed **Autoencoders**. 
 
 ## Method
-We first will take the raw dataset and train a **sparse-autoencoder** to reconstruct the dataset. The goal here is the create a great enough reconstruction to form the new dataset. 
+We will first take the raw dataset and train a **sparse-autoencoder** to reconstruct the dataset. The goal here is the create a great enough reconstruction to form the new dataset. 
 
 Once we come to an *appropriate* loss & further reconstruction of the raw data, we then take the *encoder* of the model to perform data augmentation. 
 
